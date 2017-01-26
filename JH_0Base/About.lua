@@ -1,7 +1,7 @@
 -- @Author: Webster
 -- @Date:   2015-01-21 15:21:19
 -- @Last Modified by:   Webster
--- @Last Modified time: 2016-12-17 18:14:12
+-- @Last Modified time: 2016-12-17 21:12:35
 local _L = JH.LoadLangPack
 local _JH_About = {
 	INFO = {},
@@ -198,10 +198,19 @@ function Panel.Feedback.OnPanelActive(frame)
 		szEmail = szText
 	end):Pos_()
 	-- description
-	nX, nY = ui:Append("WndEdit", { multi = true, txt = "description...", x = 20, y = nY + 12, w = 700, h = 100 }):Change(function(szText)
+	nX, nY = ui:Append("WndEdit", { multi = true, x = 20, y = nY + 12, w = 700, h = 100 }):Change(function(szText)
 		szDesc = szText
 	end)
-	ui:Append("WndButton2", { x = 630, y = 390, txt = _L["feedback"] }):Click(function()
+	ui:Append("WndButton2", { x = 630, y = 390, txt = _L["Feedback"] }):Click(function()
+		local data = {
+			szServer   = szServer,
+			szName     = szName,
+			szSystem   = szSystem,
+			szType     = szType,
+			szDesc     = szDesc,
+			szEmail    = szEmail,
+			szVersion  = JH.GetAddonInfo().szVersion
+		}
 	end)
 end
 -- public

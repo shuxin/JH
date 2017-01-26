@@ -28,6 +28,11 @@ local CACHE = {
 	[TARGET.PLAYER] = {},
 	[TARGET.NPC]    = {},
 }
+local TEMP = {
+	[TARGET.DOODAD] = {},
+	[TARGET.PLAYER] = {},
+	[TARGET.NPC]    = {},
+}
 local SA = {}
 SA.__index = SA
 local SA_COLOR = {
@@ -81,6 +86,14 @@ local ScreenArrow = {
 		["Mana"] = {},
 	}
 }
+
+function ScreenArrow.OnClearTemp()
+	TEMP = {
+		[TARGET.DOODAD] = {},
+		[TARGET.PLAYER] = {},
+		[TARGET.NPC]    = {},
+	}
+end
 
 function ScreenArrow.OnSort()
 	local t = {}
@@ -170,8 +183,22 @@ function ScreenArrow.OnBreathe()
 				obj:DrawLifeBar(fLifePer, fManaPer):DrawText(txt, szName):DrowArrow()
 			else
 				for _, vv in pairs(v) do
-					vv:Free()
+					vv:Free(true)
 				end
+			end
+		end
+	end
+	for dwType, tab in pairs(TEMP) do
+		for dwID, v in pairs(tab) do
+			local object, tInfo = select(2, ScreenArrow.GetObject(dwType, dwID))
+			if object then
+				local t = clone(v)
+				TEMP[dwType][dwID] = nil
+				JH.DelayCall(function()
+					for kk, vv in ipairs(t) do
+						CreateScreenArrow(vv.szClass, dwID, vv.tArgs)
+					end
+				end, 1000)
 			end
 		end
 	end
@@ -274,6 +301,7 @@ function SA:ctor(szClass, dwID, tArgs)
 	setmetatable(oo, self)
 	local dwType, object = ScreenArrow.GetObject(szClass, dwID)
 	local ui      = HANDLE:New()
+	oo.tArgs    = tArgs
 	oo.szName   = tArgs.szName
 	oo.txt      = tArgs.txt
 	oo.col      = tArgs.col or SA_COLOR.ARROW[szClass]
@@ -459,7 +487,7 @@ function SA:Hide()
 	return self
 end
 
-function SA:Free()
+function SA:Free(bTemp)
 	local tab = CACHE[self.dwType][self.dwID]
 	if #tab == 1 then
 		CACHE[self.dwType][self.dwID] = nil
@@ -470,6 +498,14 @@ function SA:Free()
 				break
 			end
 		end
+	end
+	if bTemp and
+		self.szClass == "BUFF" or
+		self.szClass == "DEBUFF" or
+		self.szClass == "CASTING"
+	then
+		TEMP[self.dwType][self.dwID] = TEMP[self.dwType][self.dwID] or {}
+		tinsert(TEMP[self.dwType][self.dwID], { szClass = self.szClass, tArgs = self.tArgs })
 	end
 	HANDLE:Free(self.ui)
 end
@@ -527,6 +563,7 @@ JH.RegisterInit("DBM_ARROW",
 	{ "Breathe", ScreenArrow.OnBreathe },
 	{ "FIGHT_HINT", ScreenArrow.RegisterFight },
 	{ "LOGIN_GAME", ScreenArrow.Init },
+	{ "LOADING_END", ScreenArrow.OnClearTemp },
 	{ "UI_SCALED" , function()
 		UI_SCALED = Station.GetUIScale()
 	end },
